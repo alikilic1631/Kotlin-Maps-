@@ -1,53 +1,51 @@
 package maps
 
-import java.lang.UnsupportedOperationException
-
 class ListBasedMap<K, V> : CustomMutableMap<K, V> {
+    override var entries: CustomLinkedList<Entry<K, V>> = CustomLinkedList()
 
-    override var entries = CustomLinkedList<Entry<K, V>>(RootNode(null))
-
-    // Provides read access to all keys of the map
-    override var keys: Iterable<K> = entries.map { it.key }
-
-    // Provides read access to all values of the map
-    override var values: Iterable<V> = entries.map { it.value }
-
-    override fun get(key: K): V? {
-        if (this.entries.isEmpty()) {
-            throw UnsupportedOperationException()
-        } else {
-            return this.entries.first { it.key == key }.value
-        }
-    }
-
-    override fun set(key: K, value: V): V? {
-        return if (this.entries.isEmpty() || key !in keys) {
-            this.entries.add(Entry(key, value))
-            this.values.plus(value)
-            this.keys.plus(value)
-
-            null
-        } else {
-            val old = this[key]
-            this.entries.first { it.key == key }.value = value
-            this.values.filter { it == old }.plus(value)
-            old
-        }
-    }
-
-    override fun put(key: K, value: V): V? {
-        return this.set(key, value)
-    }
-
-    override fun put(entry: Entry<K, V>): V? {
-        return this.set(entry.key, entry.value)
-    }
+    override val keys: Iterable<K>
+        get() = entries.map { it.key }
+    override val values: Iterable<V>
+        get() = entries.map { it.value }
 
     override fun contains(key: K): Boolean = key in keys
 
+    override fun get(key: K): V? {
+        if (!contains(key)) {
+            return null
+        }
+        return entries.first { it.key == key }.value
+    }
+
     override fun remove(key: K): V? {
-        val removed = this[key]
-        this.entries.filter{it.key == key }
-        return removed
+        if (!contains(key)) {
+            return null
+        }
+        val removedVal = this[key]
+
+        var newEntries: CustomLinkedList<Entry<K, V>> = CustomLinkedList()
+        entries.filter { it.key != key }.forEach { newEntries.add(it) }
+        entries = newEntries
+
+        return removedVal
+    }
+
+    override fun put(
+        key: K,
+        value: V,
+    ): V? = this.set(key, value)
+
+    override fun put(entry: Entry<K, V>): V? = this.set(entry.key, entry.value)
+
+    override fun set(
+        key: K,
+        value: V,
+    ): V? {
+        var oldVal: V? = null
+        if (contains(key)) {
+            oldVal = this.remove(key)
+        }
+        (entries as CustomLinkedList).add(Entry(key, value))
+        return oldVal
     }
 }
